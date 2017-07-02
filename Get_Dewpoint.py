@@ -4,7 +4,17 @@ from matplotlib import dates
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date,datestr2num
-%matplotlib inline
+
+"""
+
+=========
+
+The data is scraped off of the Weather Underground daily summary pages.
+
+=========
+
+"""
+
 
 
 def Scrape_Td(station,yearstart,yearend,daystart=1,dayend=32,monthstart=1,monthend=13,QC=True):
