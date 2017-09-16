@@ -222,3 +222,90 @@ def WxHist_Team(school=['uic']):
     data['rank'] = ranks
     data['score'] = scores
     return data
+
+
+def Retrive_Error(forecaster,city_list,school,day):
+    #FUNCTION
+    frcstid = np.zeros([4,])
+    day_list = np.ones(len(city_list),dtype=int)*8
+    day_list[-1] = day
+    it = -1
+    for city in city_list:
+        it = it + 1
+        day = day_list[it]
+        URLstr ='http://wxchallenge.com/history/results/'+season+'/'+city+'_results_'+school+'_day'       
+        URLstr = URLstr + str(day) +'.html'
+        HTML_Page = urllib.urlopen(URLstr).read()
+        soup = BeautifulSoup(HTML_Page,"lxml")
+        table = soup.find('table')
+        tr = table.find('td', text=forecaster)
+        td = tr.findAllNext('td')
+        for i in np.arange(17,21,1):
+            frcstid[i-17] = frcstid[i-17] + float(td[i].text)
+    
+    return frcstid
+
+def Retrive_fcst(forecaster,city,school,day):
+    #FUNCTION
+    frcstid = np.zeros([4,])
+    URLstr ='http://wxchallenge.com/history/results/'+season+'/'+city+'_results_'+school+'_day'       
+    URLstr = URLstr + str(day) +'.html'
+    HTML_Page = urllib.urlopen(URLstr).read()
+    soup = BeautifulSoup(HTML_Page,"lxml")
+    table = soup.find('table')
+    tr = table.find('td', text=forecaster)
+    td = tr.findAllNext('td')
+    for i in np.arange(4,8,1):
+        frcstid[i-4] = float(td[i].text)
+    frcst_sc = np.array([float(td[24].text),float(td[25].text)])
+    
+    data = {}
+    data['frcst'] = frcstid
+    data['score'] = frcst_sc
+    return data
+
+def Retrive_score_array(forecaster,city,school,day):
+    #FUNCTION
+    city_score = np.zeros([day,])
+    cuml_score =np.zeros([day,])
+    rank = np.zeros([day,])
+    for i in np.arange(0,day,1):
+        URLstr ='http://wxchallenge.com/history/results/'+season+'/'+city+'_results_'+school+'_day'       
+        URLstr = URLstr + str(i+1) +'.html'
+        HTML_Page = urllib.urlopen(URLstr).read()
+        soup = BeautifulSoup(HTML_Page,"lxml")
+        table = soup.find('table')
+        tr = table.find('td', text=forecaster)
+        td = tr.findAllNext('td')
+        city_score[i] = float(td[24].text)
+        cuml_score[i] = float(td[25].text)
+        rank[i] = float(td[26].text)
+    
+    data = {}
+    data['city'] = city_score
+    data['cuml'] = cuml_score
+    data['rank'] = rank
+    return data
+
+def Retrive_consen(city,day):
+    #FUNCTION
+    school = 'bkp'
+    frcstid = np.zeros([4,])
+    URLstr ='http://wxchallenge.com/history/results/'+season+'/'+city+'_results_'+school+'_day'       
+    URLstr = URLstr + str(day) +'.html'
+    HTML_Page = urllib.urlopen(URLstr).read()
+    soup = BeautifulSoup(HTML_Page,"lxml")
+    table = soup.find('table')
+    consen = table.find('td', text='CONSEN')
+    td = consen.findAllNext('td')
+    if td[0].text == 'bkp':
+        td = td[34:]
+    for i in np.arange(4,8,1):
+        frcstid[i-4] = float(td[i].text)
+    frcst_sc = np.array([float(td[24].text),float(td[25].text)])
+    
+    data = {}
+    data['frcst'] = frcstid
+    data['score'] = frcst_sc
+    return data
+
