@@ -3,6 +3,164 @@ from bs4 import BeautifulSoup
 import mechanize
 import numpy as np
 
+def WxHist(forecaster,school='uic'):
+    
+    """
+    
+    This function retrieves the history of a forecaster throughout the WxChallenge history. Current functionallity allows the 
+    same username to be found on multiple schools (to accomidate for their undergraduate and graduate institution. Example
+    would be:
+    
+    data = WxHist('forecasterID',['UndergradSchool','GraduateSchool'])
+    
+    NOT SUPPORTED: A changing forecastID, will add in future versions
+    
+    """
+
+    keys = ['06-07','07-08','08-09','09-10','10-11','11-12','12-13','13-14','14-15','15-16','16-17']
+    rank1_s = np.zeros(len(keys))
+    rank2_s = np.zeros(len(keys))
+    cuml_score_s = np.zeros(len(keys))
+    score_list = {}
+
+    if len(school) > 1:
+        print('in more than one school loop')
+        for k in school:
+            it = -1
+            for j in keys:
+                it = it + 1
+                url = 'http://wxchallenge.com/challenge/cumulative_results.php'
+                br = mechanize.Browser()
+                br.set_handle_robots(False) # ignore robots
+                br.open(url)
+                br.select_form(name='CumulativeScoresForm')
+                br.form['year'] = [j,]
+                br.form['school'] = [k,]
+                res = br.submit()
+                content = res.read()
+                soup = BeautifulSoup(content,'lxml')
+                table = soup.find('table', {"id":"cumulative_forecasters_scores"})
+                
+                try:
+                    trs = table.find_all('tr')
+                except:
+                    rank1 = np.nan
+                    rank2 = np.nan
+                    cuml_score = np.nan
+                    scores = np.nan
+                    if rank1_s[it] == 0. :
+                        rank1_s[it] = rank1
+                        rank2_s[it] = rank2
+                        cuml_score_s[it] = cuml_score
+                        score_list[it] = scores
+                    continue
+                    
+                
+                a = table.find('td', text=forecaster)
+                if a is None:
+                    rank1 = np.nan
+                    rank2 = np.nan
+                    cuml_score = np.nan
+                    scores = np.nan
+                    if rank1_s[it] == 0. :
+                        rank1_s[it] = rank1
+                        rank2_s[it] = rank2
+                        cuml_score_s[it] = cuml_score
+                        score_list[it] = scores
+                    continue
+
+                row = a.findParent()
+                tr = row.find_all('td')
+                try:
+                    rank1 = float(tr[1].get_text())
+                except:
+                    rank1 = np.nan
+
+                try:
+                    rank2 = float(tr[2].get_text())
+                except:
+                    rank2 = np.nan
+
+                cuml_score = float(tr[len(tr)-6].get_text())
+                scores = np.array([])
+                for i in np.arange(9,len(tr)-6,2):
+                    try:
+                        s = float(tr[i].get_text())
+                    except:
+                        s = np.nan
+                    scores = np.append(scores,s)
+
+                if  rank1_s[it] == 0 or np.isnan(rank1_s[it]):
+                    rank1_s[it] = rank1
+                    rank2_s[it] = rank2
+                    cuml_score_s[it] = cuml_score
+                    score_list[it] = scores
+                continue
+                
+    else:
+        k = school[0]
+        it = -1
+        for j in keys:
+            it = it + 1
+            url = 'http://wxchallenge.com/challenge/cumulative_results.php'
+            br = mechanize.Browser()
+            br.set_handle_robots(False) # ignore robots
+            br.open(url)
+            br.select_form(name='CumulativeScoresForm')
+            br.form['year'] = [j,]
+            br.form['school'] = [k,]
+            res = br.submit()
+            content = res.read()
+            soup = BeautifulSoup(content,'lxml')
+            table = soup.find('table', {"id":"cumulative_forecasters_scores"})
+            trs = table.find_all('tr')
+            a = table.find('td', text=forecaster)
+            if a is None:
+                rank1 = np.nan
+                rank2 = np.nan
+                cuml_score = np.nan
+                scores = np.nan
+                rank1_s[it] = rank1
+                rank2_s[it] = rank2
+                cuml_score_s[it] = cuml_score
+                score_list[it] = scores
+                continue
+
+            row = a.findParent()
+            tr = row.find_all('td')
+            try:
+                rank1 = float(tr[1].get_text())
+            except:
+                rank1 = np.nan
+
+            try:
+                rank2 = float(tr[2].get_text())
+            except:
+                rank2 = np.nan
+
+            cuml_score = float(tr[len(tr)-6].get_text())
+            scores = np.array([])
+            for i in np.arange(9,len(tr)-6,2):
+                try:
+                    s = float(tr[i].get_text())
+                except:
+                    s = np.nan
+                scores = np.append(scores,s)
+
+            rank1_s[it] = rank1
+            rank2_s[it] = rank2
+            cuml_score_s[it] = cuml_score
+            score_list[it] = scores
+        
+    data = {}
+    data['rank_all'] = rank1_s
+    data['rank_year'] = rank2_s
+    data['Cuml'] = cuml_score_s
+    data['scores'] = score_list
+    data['it'] = it
+    return data
+
+
 def WxHist_Team(school=['uic']):
     
     """
